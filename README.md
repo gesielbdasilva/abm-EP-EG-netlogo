@@ -12,7 +12,6 @@ Here is the model procedure:
 
 1. Assign prior degrees of belief for each of the mutually exclusive hypotheses $`h_1`$ and $`h_2`$ to agents from both groups (100 goodness-seekers and 100 power-seekers). $`P(h_1)`$ is drawn randomly from a normal distribution $`\mathcal{N}(\mu, 0.25^2)`$, where $`\mu`$ is fixed for each simulation with some value from the set $`\{0.01, 0.1, 0.2, \dots, 0.99\}`$, and $`P(h_2) = 1 - P(h_1)`$.
 2. Set whether $`h_1`$ or $`h_2`$ is true.
-
   - Calibrated Condition: The objective chance of a hypothesis being true for any given run is set to be equal to the goodness-seekers' average prior belief in it. That objective chance determines the proportion of simulations in which each hypothesis will be true.
   - Stochastic Condition: The true hypothesis is randomly assigned from the uniform distribution over [0,1].
 
