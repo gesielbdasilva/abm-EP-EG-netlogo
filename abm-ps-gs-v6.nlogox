@@ -134,11 +134,11 @@ to go
     move
     update
   ]
-  update-plot
-  ;update-plot1
-  update-histogram
-  update-disagreement-plot
-  update-truth-alignment-plot
+  bs-over-time
+  th-over-time
+  update-prior-dist
+  update-th-sd-plot
+  update-brier-sd-plot
   if ticks >= total-ticks [stop] ;stopping condition
   tick
 end
@@ -284,87 +284,59 @@ end
 ;:::::::::::::::::::::::::::::PLOTS:::::::::::::::::::::::::::::::::::
 
 ; update plot for prop(h1)
-to update-plot
-  set-current-plot "Brier over Time"
-
-  set-current-plot-pen "Power-Seekers"
-  plotxy ticks mean [prop-h1] of power-seekers
-
-  set-current-plot-pen "Goodness-Seekers"
-  plotxy ticks mean [prop-h1] of goodness-seekers
-end
 
 ; display results: average credence over time for both groups
-to plot-results
+to bs-over-time
   set-current-plot "Brier over Time"
 
-  set-current-plot-pen "Power-Seekers"
+  set-current-plot-pen "PS"
   plotxy ticks mean [brier] of power-seekers
 
-  set-current-plot-pen "Goodness-Seekers"
+  set-current-plot-pen "GS"
   plotxy ticks mean [brier] of goodness-seekers
 end
 
-to update-truth-alignment-plot
-
-  set-current-plot "Truth Hit (per tick)"
-
-  set-current-plot-pen "Power-Seekers"
-  plotxy ticks mean [truth-hit?] of power-seekers
-
-  set-current-plot-pen "Goodness-Seekers"
-  plotxy ticks mean [truth-hit?] of goodness-seekers
-end
-
 ; display results: truth alignment over time for both groups
-to plot-results1
-  set-current-plot "Truth Hit (per tick)"
+to th-over-time
+  set-current-plot "Truth Hit over Time"
 
-  set-current-plot-pen "Power-Seekers"
+  set-current-plot-pen "PS"
   plotxy ticks mean [truth-hit?] of power-seekers
 
-  set-current-plot-pen "Goodness-Seekers"
+  set-current-plot-pen "GS"
   plotxy ticks mean [truth-hit?] of goodness-seekers
 end
 
 ; update priors distribution histogram
-to update-histogram
-  set-current-plot "Prior Distributions"
+to update-prior-dist
+  set-current-plot "P(h1) Distribution"
   clear-plot
-  set-current-plot-pen "Distribution h1 PS"
+  set-current-plot-pen "PS"
   histogram [prior-h1] of power-seekers
-  set-current-plot-pen "Distribution h1 GS"
+  set-current-plot-pen "GS"
   histogram [prior-h1] of goodness-seekers
 end
 
 ; update disagreement plot
-to update-disagreement-plot
-  set-current-plot "Disagreement on the truth over time"
+to update-th-sd-plot
+  set-current-plot "Truth hit SD"
 
-  set-current-plot-pen "Power-Seekers"
+  set-current-plot-pen "PS"
   plotxy ticks standard-deviation [truth-hit?] of power-seekers
 
-  set-current-plot-pen "Goodness-Seekers"
+  set-current-plot-pen "GS"
   plotxy ticks standard-deviation [truth-hit?] of goodness-seekers
 end
 
-to update-brier-disagreement-plot
-  set-current-plot "Disagreement on the Brier over time"
+to update-brier-sd-plot
+  set-current-plot "Brier SD"
 
-  set-current-plot-pen "Power-Seekers"
+  set-current-plot-pen "PS"
   plotxy ticks standard-deviation [brier] of power-seekers
 
-  set-current-plot-pen "Goodness-Seekers"
+  set-current-plot-pen "GS"
   plotxy ticks standard-deviation [brier] of goodness-seekers
 end
-
-;to update-truth-alignment-plot
-;  set-current-plot "Truth Alignment (per tick)"
-;  set-current-plot-pen "Power-Seekers"
-;  plotxy ticks alignment-of power-seekers
-;  set-current-plot-pen "Goodness-Seekers"
-;  plotxy ticks alignment-of goodness-seekers
-;end
 
 
 ;##################################################################################################
@@ -372,8 +344,8 @@ end
 GRAPHICS-WINDOW
 288
 10
-686
-409
+566
+289
 -1
 -1
 8.2
@@ -422,7 +394,7 @@ avg-likelihood-h2
 avg-likelihood-h2
 0.01
 1
-0.8
+1.0
 0.001
 1
 NIL
@@ -471,7 +443,7 @@ avg-prior-h1-power-seekers
 avg-prior-h1-power-seekers
 0.001
 0.999
-0.5
+0.509
 0.001
 1
 NIL
@@ -501,7 +473,7 @@ avg-likelihood-h1
 avg-likelihood-h1
 0.01
 1
-0.8
+0.5
 0.001
 1
 NIL
@@ -545,7 +517,7 @@ PLOT
 15
 2081
 310
-Truth Hit (per tick)
+Truth Hit over Time
 NIL
 NIL
 0.0
@@ -553,18 +525,18 @@ NIL
 0.0
 1.0
 true
-false
-"set-current-plot \"Truth Hit (per tick)\"" ""
+true
+"set-current-plot \"Truth Hit over Time\"" ""
 PENS
-"power-seekers" 1.0 0 -2674135 true "" "plotxy ticks mean [truth-hit?] of power-seekers"
-"goodness-seekers" 1.0 0 -13345367 true "" "plotxy ticks mean [truth-hit?] of goodness-seekers"
+"PS" 1.0 0 -2674135 true "" "plotxy ticks mean [truth-hit?] of power-seekers"
+"GS" 1.0 0 -13345367 true "" "plotxy ticks mean [truth-hit?] of goodness-seekers"
 
 PLOT
 289
 463
 684
 742
-h1 Prior Distributions
+P(h1) Distribution
 NIL
 NIL
 0.0
@@ -573,7 +545,7 @@ NIL
 100.0
 true
 true
-"set-current-plot \"Prior Distributions\"" ""
+"set-current-plot \"P(h1) Distribution\"" ""
 PENS
 "PS" 0.01 0 -955883 true "" "histogram [prior-h1] of power-seekers"
 "GS" 0.01 0 -11221820 true "" "histogram [prior-h1] of goodness-seekers"
@@ -661,11 +633,11 @@ Standard deviation
 0.0
 0.5
 true
-false
-"set-current-plot \"Disagreement on the truth over time\"" ""
+true
+"set-current-plot \"Truth hit SD\"" ""
 PENS
-"Power-Seekers" 1.0 0 -955883 true "" "plot standard-deviation [truth-hit?] of power-seekers"
-"Goodness-Seekers" 1.0 0 -11221820 true "" "plot standard-deviation [truth-hit?] of goodness-seekers"
+"PS" 1.0 0 -955883 true "set-current-plot-pen \"PS\"" "plot standard-deviation [truth-hit?] of power-seekers"
+"GS" 1.0 0 -11221820 true "set-current-plot-pen \"GS\"" "plot standard-deviation [truth-hit?] of goodness-seekers"
 
 SLIDER
 0
@@ -733,8 +705,8 @@ true
 true
 "set-current-plot \"Brier over Time\"" ""
 PENS
-"PS" 1.0 0 -2674135 true "set-current-plot-pen \"Power-Seekers\"" "plot mean [brier] of power-seekers"
-"GS" 1.0 0 -13345367 true "set-current-plot-pen \"Goodness-Seekers\"" "plot mean [brier] of goodness-seekers"
+"PS" 1.0 0 -2674135 true "set-current-plot-pen \"PS\"" "plot mean [brier] of power-seekers"
+"GS" 1.0 0 -13345367 true "set-current-plot-pen \"GS\"" "plot mean [brier] of goodness-seekers"
 
 SLIDER
 0
@@ -761,26 +733,11 @@ condition
 "cal" "sto" "nor"
 0
 
-SLIDER
-0
-561
-172
-594
-total-ticks
-total-ticks
-0
-100
-100.0
-1
-1
-NIL
-HORIZONTAL
-
 MONITOR
 742
 15
 847
-61
+60
 NIL
 current-truth
 17
@@ -796,52 +753,64 @@ Brier SD
 NIL
 NIL
 0.0
-10.0
+100.0
 0.0
-10.0
+0.5
 true
-false
-"set-current-plot \"Disagreement on the Brier over time\"" ""
+true
+"set-current-plot \"Brier SD\"" ""
 PENS
-"Power-Seekers" 1.0 0 -955883 true "" "plotxy ticks standard-deviation [brier] of power-seekers"
-"Goodness-Seekers" 1.0 0 -8990512 true "" "plotxy ticks standard-deviation [brier] of goodness-seekers"
+"PS" 1.0 0 -955883 true "set-current-plot-pen \"PS\"" "plot standard-deviation [brier] of power-seekers"
+"GS" 1.0 0 -8990512 true "set-current-plot-pen \"GS\"" "plot standard-deviation [brier] of goodness-seekers"
 
 @#$#@#$#@
+# Truth-Tracking in Explanatory Reasoning: Explanatory Power versus Explanatory Goodness
+
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+This is an agent-based model designed to compare the truth-tracking features of two measures of explanatory reasoning: explanatory power, given by **EP(e,h) = log [Pr(e|h)/Pr(e)]**, and explanatory goodness, given by **EG(e,h) = EP - I(h)** where **I(h) = - log Pr(h)** is the informational complexity of **h**. 
+
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+The basic idea: agents are divided into two groups, *power-seekers* and *goodness-seekers*, which respectively do inferences using explanatory power and explanatory goodness based on the evidence available and on their prior degrees of belief. In each simulation a certain hypothesis is true. The model tests the extent that a certain measure correctly chooses the truth (truth-hit) and how accurately it does (Brier scores).
+
+Here is the model procedure:
+
+1. Assign prior degrees of belief for each of the mutually exclusive hypotheses h1 and h2 to agents from both groups (100 goodness-seekers and 100 power-seekers). P (h1) is drawn randomly from a normal distribution N (μ, 0.252), where μ is fixed for each simulation with some value from the set {0.01, 0.1, 0.2, . . . , 0.99}, and P (h2) = 1 − P (h1).
+2. Set whether h1 or h2 is true.
+- Calibrated Condition: The objective chance of a hypothesis being true for any given
+run is set to be equal to the goodness-seekers’ average prior belief in it. That objective
+chance determines the proportion of simulations in which each hypothesis will be true.
+- Stochastic Condition: The true hypothesis is randomly assigned from the uniform
+distribution over [0,1].
+3. Distribute the evidence: each location k has a fixed but distinct pair of likelihoods,
+[P (ek|h1), P (ek|h2)]. These likelihoods are randomly drawn from normal distributions N(μ, 0.22), where μ is drawn from the set {0.01, 0.1, 0.2, . . . , 1.0}, with the restriction
+that the evidence overall favors the truth; i.e., P (e|true) − P (e|false) > 0, where P(e|·) is the average μ for each likelihood distribution.
+4. Each time step:
+- Agents observe the likelihoods for each location and select the best hypothesis accord-
+ing to their group’s measure (EP or EG).
+- Agents update their priors via Bayesian conditionalization using the evidence from
+their current location.
+- Record truth hit and Brier score.
+
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+You can play with the different parameters, such as prior degrees of belief and standard deviation for h1, distribution of the evidence for the two hypotheses, and whether agents update.
 
 ## THINGS TO NOTICE
 
-(suggested things for the user to notice while running the model)
+Notice how the truth-tracking reports, the truth hit and the Brier scores, change as a function of distinct combinations of parameters.
 
-## THINGS TO TRY
-
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
-
-## EXTENDING THE MODEL
-
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
-
-## NETLOGO FEATURES
-
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
-
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+This model is part of a research project in philosophy of science which focuses on Bayesian characterizations of explanatory virtues. To read the most recent draft discussing the model results and its significance to our understanding of explanatory reasoning, please, email me at [gesieldasilva@missouri.edu](mailto:gesieldasilva@missouri.edu).
+
+You can check updated versions at the model [GitHub page](https://github.com/gesielbdasilva/abm-EP-EG-netlogo).
+
+To get to know my work and other projects I've developed, please, email me at the address above or visit my webpage: [gesieldasilva.com](https://gesieldasilva.com)
 @#$#@#$#@
 default
 true
