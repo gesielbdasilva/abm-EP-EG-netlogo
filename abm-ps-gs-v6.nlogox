@@ -63,7 +63,7 @@ to setup
   setup-patches
   setup-turtles
 ; set up truth-freq according to a condition
-  if condition = "tps"  [set truth-freq-h1 round (avg-prior-h1-goodness-seekers * 100)]
+  if condition = "cal"  [set truth-freq-h1 round (avg-prior-h1-goodness-seekers * 100)]
   if condition = "sto"  [set truth-freq-h1 round (random 100)]
   if condition = "nor" [
   let raw-freq random-normal (avg-prior-h1-goodness-seekers * 100) 25
@@ -339,13 +339,23 @@ end
 
 ; update disagreement plot
 to update-disagreement-plot
-  set-current-plot "Disagreement on the BE over Time"
+  set-current-plot "Disagreement on the truth over time"
 
   set-current-plot-pen "Power-Seekers"
-  plotxy ticks standard-deviation [prop-h1] of power-seekers
+  plotxy ticks standard-deviation [truth-hit?] of power-seekers
 
   set-current-plot-pen "Goodness-Seekers"
-  plotxy ticks standard-deviation [prop-h1] of goodness-seekers
+  plotxy ticks standard-deviation [truth-hit?] of goodness-seekers
+end
+
+to update-brier-disagreement-plot
+  set-current-plot "Disagreement on the Brier over time"
+
+  set-current-plot-pen "Power-Seekers"
+  plotxy ticks standard-deviation [brier] of power-seekers
+
+  set-current-plot-pen "Goodness-Seekers"
+  plotxy ticks standard-deviation [brier] of goodness-seekers
 end
 
 ;to update-truth-alignment-plot
@@ -362,11 +372,11 @@ end
 GRAPHICS-WINDOW
 288
 10
-545
-268
+686
+409
 -1
 -1
-7.55
+8.2
 1
 10
 1
@@ -412,7 +422,7 @@ avg-likelihood-h2
 avg-likelihood-h2
 0.01
 1
-1.0
+0.8
 0.001
 1
 NIL
@@ -461,7 +471,7 @@ avg-prior-h1-power-seekers
 avg-prior-h1-power-seekers
 0.001
 0.999
-0.001
+0.5
 0.001
 1
 NIL
@@ -476,7 +486,7 @@ number-of-turtles-each
 number-of-turtles-each
 1
 2000
-164.0
+100.0
 1
 1
 NIL
@@ -491,7 +501,7 @@ avg-likelihood-h1
 avg-likelihood-h1
 0.01
 1
-0.805
+0.8
 0.001
 1
 NIL
@@ -509,32 +519,32 @@ g-s-bayes-updating?
 -1000
 
 MONITOR
-569
-324
-680
-369
-mean prop-h1 p-s
-mean [prop-h1] of power-seekers
-10
+1003
+325
+1114
+370
+mean brier p-s
+mean [brier] of power-seekers
+4
 1
 11
 
 MONITOR
-690
-324
-811
-369
-mean prop-h1 g-s
-mean [prop-h1] of goodness-seekers
-10
+1123
+325
+1244
+370
+mean brier g-s
+mean [brier] of goodness-seekers
+4
 1
 11
 
 PLOT
-1177
-10
-1685
-303
+1653
+15
+2081
+310
 Truth Hit (per tick)
 NIL
 NIL
@@ -550,11 +560,11 @@ PENS
 "goodness-seekers" 1.0 0 -13345367 true "" "plotxy ticks mean [truth-hit?] of goodness-seekers"
 
 PLOT
-285
-460
-691
-728
-Prior Distributions
+289
+463
+684
+742
+h1 Prior Distributions
 NIL
 NIL
 0.0
@@ -565,8 +575,8 @@ true
 true
 "set-current-plot \"Prior Distributions\"" ""
 PENS
-"Distribution h1 PS" 0.01 0 -955883 true "" "histogram [prior-h1] of power-seekers"
-"Distribution h1 GS" 0.01 0 -11221820 true "" "histogram [prior-h1] of goodness-seekers"
+"PS" 0.01 0 -955883 true "" "histogram [prior-h1] of power-seekers"
+"GS" 0.01 0 -11221820 true "" "histogram [prior-h1] of goodness-seekers"
 
 SLIDER
 0
@@ -577,39 +587,39 @@ avg-prior-h1-goodness-seekers
 avg-prior-h1-goodness-seekers
 0.001
 0.999
-0.001
+0.5
 0.001
 1
 NIL
 HORIZONTAL
 
 MONITOR
-1593
-314
-1727
-359
-alignment-of g-s
-alignment-of goodness-seekers
-5
+1879
+323
+2013
+368
+mean truth-hit g-s
+mean [truth-hit?] of goodness-seekers
+4
 1
 11
 
 MONITOR
-1434
-314
-1568
-359
-alignment-of p-s
-alignment-of power-seekers
-5
+1736
+323
+1870
+368
+mean truth-hit p-s
+mean [truth-hit?] of power-seekers
+4
 1
 11
 
 MONITOR
-355
-736
-490
-781
+339
+755
+474
+800
 mean [prior-h1] of p-s
 mean [prior-h1] of power-seekers
 4
@@ -617,10 +627,10 @@ mean [prior-h1] of power-seekers
 11
 
 MONITOR
-508
-736
-643
-781
+485
+756
+620
+801
 mean [prior-h1] of g-s
 mean [prior-h1] of goodness-seekers
 4
@@ -639,11 +649,11 @@ p-s-bayes-updating?
 -1000
 
 PLOT
-716
-460
-1193
-727
-Disagreement on the BE over Time
+1659
+458
+2092
+737
+Truth hit SD
 Time
 Standard deviation
 0.0
@@ -652,10 +662,10 @@ Standard deviation
 0.5
 true
 false
-"set-current-plot \"Disagreement on the BE over Time\"" ""
+"set-current-plot \"Disagreement on the truth over time\"" ""
 PENS
-"Power-Seekers" 1.0 0 -955883 true "" "plot standard-deviation [prop-h1] of power-seekers"
-"Goodness-Seekers" 1.0 0 -11221820 true "" "plot standard-deviation [prop-h1] of goodness-seekers"
+"Power-Seekers" 1.0 0 -955883 true "" "plot standard-deviation [truth-hit?] of power-seekers"
+"Goodness-Seekers" 1.0 0 -11221820 true "" "plot standard-deviation [truth-hit?] of goodness-seekers"
 
 SLIDER
 0
@@ -666,7 +676,7 @@ sd-priors-ps
 sd-priors-ps
 0
 0.5
-0.5
+0.25
 .01
 1
 NIL
@@ -681,7 +691,7 @@ sd-priors-gs
 sd-priors-gs
 0
 0.5
-0.43
+0.25
 0.01
 1
 NIL
@@ -708,13 +718,13 @@ Likelihoods setup
 0
 
 PLOT
-568
-10
-1052
-307
+912
+15
+1342
+313
 Brier over Time
 Time
-Avg proportion h1 is the best
+Brier score (average)
 0.0
 10.0
 0.0
@@ -723,30 +733,8 @@ true
 true
 "set-current-plot \"Brier over Time\"" ""
 PENS
-"Power-Seekers" 1.0 0 -2674135 true "set-current-plot-pen \"Power-Seekers\"" "plot mean [brier] of power-seekers"
-"Goodness-Seekers" 1.0 0 -13345367 true "set-current-plot-pen \"Goodness-Seekers\"" "plot mean [brier] of goodness-seekers"
-
-MONITOR
-716
-736
-818
-781
-SD p-s
-standard-deviation [prop-h1] of power-seekers
-10
-1
-11
-
-MONITOR
-838
-736
-976
-781
-SD g-s
-standard-deviation [prop-h1] of goodness-seekers
-10
-1
-11
+"PS" 1.0 0 -2674135 true "set-current-plot-pen \"Power-Seekers\"" "plot mean [brier] of power-seekers"
+"GS" 1.0 0 -13345367 true "set-current-plot-pen \"Goodness-Seekers\"" "plot mean [brier] of goodness-seekers"
 
 SLIDER
 0
@@ -756,8 +744,8 @@ SLIDER
 total-ticks
 total-ticks
 0
-1000
-200.0
+500
+100.0
 10
 1
 NIL
@@ -770,7 +758,7 @@ CHOOSER
 778
 condition
 condition
-"tps" "sto" "nor"
+"cal" "sto" "nor"
 0
 
 SLIDER
@@ -782,22 +770,41 @@ total-ticks
 total-ticks
 0
 100
-200.0
+100.0
 1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-845
-323
-931
-368
+742
+15
+847
+61
 NIL
 current-truth
 17
 1
 11
+
+PLOT
+915
+461
+1348
+743
+Brier SD
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"set-current-plot \"Disagreement on the Brier over time\"" ""
+PENS
+"Power-Seekers" 1.0 0 -955883 true "" "plotxy ticks standard-deviation [brier] of power-seekers"
+"Goodness-Seekers" 1.0 0 -8990512 true "" "plotxy ticks standard-deviation [brier] of goodness-seekers"
 
 @#$#@#$#@
 ## WHAT IS IT?
