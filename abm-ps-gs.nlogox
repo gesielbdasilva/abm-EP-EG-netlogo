@@ -14,6 +14,15 @@ globals [
   stopping-tick
   falsity-prior-ps
   falsity-prior-gs
+
+  agg-brier-ps
+  agg-brier-gs
+  agg-truth-hit-ps
+  agg-truth-hit-gs
+  agg-brier-sd-ps
+  agg-brier-sd-gs
+  agg-truth-hit-sd-ps
+  agg-truth-hit-sd-gs
 ]
 
 turtles-own [
@@ -59,7 +68,10 @@ end
 
 ; initialize the world
 to setup
-  clear-all
+  clear-turtles
+  clear-patches
+  ; clear-all-plots (This is already in 'go', so it's not needed here)
+  ; clear-drawing (If you draw on the world)
   setup-patches
   setup-turtles
 ; set up truth-freq according to a condition
@@ -129,18 +141,62 @@ to setup-turtles
 end
 
 ; main update loop
-to go
+; --- 1. This procedure runs the logic for a single tick ---
+to run-one-tick
   ask turtles [
     move
     update
   ]
-  bs-over-time
-  th-over-time
-  update-prior-dist
-  update-th-sd-plot
-  update-brier-sd-plot
-  if ticks >= total-ticks [stop] ;stopping condition
   tick
+end
+
+to go
+
+  clear-all-plots
+
+  let num-ticks (total-ticks + 1)
+  set agg-brier-ps n-values num-ticks [0]
+  set agg-brier-gs n-values num-ticks [0]
+  set agg-truth-hit-ps n-values num-ticks [0]
+  set agg-truth-hit-gs n-values num-ticks [0]
+
+  set agg-brier-sd-ps n-values num-ticks [0]
+  set agg-brier-sd-gs n-values num-ticks [0]
+  set agg-truth-hit-sd-ps n-values num-ticks [0]
+  set agg-truth-hit-sd-gs n-values num-ticks [0]
+
+  repeat num-simulations [
+    setup
+
+    while [ticks < total-ticks] [
+      run-one-tick
+
+      let b-ps mean [brier] of power-seekers
+      let b-gs mean [brier] of goodness-seekers
+      let th-ps mean [truth-hit?] of power-seekers
+      let th-gs mean [truth-hit?] of goodness-seekers
+
+      let sd-b-ps standard-deviation [brier] of power-seekers
+      let sd-b-gs standard-deviation [brier] of goodness-seekers
+      let sd-th-ps standard-deviation [truth-hit?] of power-seekers
+      let sd-th-gs standard-deviation [truth-hit?] of goodness-seekers
+
+      ; add the current value to the aggregate lis
+      set agg-brier-ps (replace-item ticks agg-brier-ps (item ticks agg-brier-ps + b-ps))
+      set agg-brier-gs (replace-item ticks agg-brier-gs (item ticks agg-brier-gs + b-gs))
+      set agg-truth-hit-ps (replace-item ticks agg-truth-hit-ps (item ticks agg-truth-hit-ps + th-ps))
+      set agg-truth-hit-gs (replace-item ticks agg-truth-hit-gs (item ticks agg-truth-hit-gs + th-gs))
+
+      set agg-brier-sd-ps (replace-item ticks agg-brier-sd-ps (item ticks agg-brier-sd-ps + sd-b-ps))
+      set agg-brier-sd-gs (replace-item ticks agg-brier-sd-gs (item ticks agg-brier-sd-gs + sd-b-gs))
+      set agg-truth-hit-sd-ps (replace-item ticks agg-truth-hit-sd-ps (item ticks agg-truth-hit-sd-ps + sd-th-ps))
+      set agg-truth-hit-sd-gs (replace-item ticks agg-truth-hit-sd-gs (item ticks agg-truth-hit-sd-gs + sd-th-gs))
+    ]
+  ]
+
+  plot-aggregate-results
+
+  update-prior-dist
 end
 
 ; turtles move randomly
@@ -151,7 +207,7 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;STRATEGIES;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; set strategies
+; set "strategies"
 to update
   let evidence-here-h1 [likelihood-h1] of patch-here
   let evidence-here-h2 [likelihood-h2] of patch-here
@@ -275,36 +331,97 @@ ifelse current-truth = "h1" [set brier (1 - p-h1) ^ 2] [set brier (1 - p-h2) ^ 2
 
 end
 
-;:::: HANNAH'S SUGGESTION TO ACCOUNT FOR JONAH'S CRITIQUE THAT I'M BEGGING THE QUESTION :::::::::::::
-; Use some prior (avg prior gs?) to set up the prop. of ticks h1 is true.
-; For each tick, know whether T = h1 or T = h2. Then compute truth-alignment as the prop. of turtles which think the best explanation is T for each group.
-
-
-
 ;:::::::::::::::::::::::::::::PLOTS:::::::::::::::::::::::::::::::::::
 
 ; update plot for prop(h1)
 
-; display results: average credence over time for both groups
-to bs-over-time
+; plotting procedure
+to plot-aggregate-results
+  plot-aggregate-brier-means
+  plot-aggregate-truth-hit-means
+  plot-aggregate-brier-sds
+  plot-aggregate-truth-hit-sds
+end
+
+; Plots the average Brier scores
+to plot-aggregate-brier-means
+  ; Calculate the average by dividing each item in the sum list by num-simulations
+  let avg-b-ps (map [ x -> x / num-simulations ] agg-brier-ps)
+  let avg-b-gs (map [ x -> x / num-simulations ] agg-brier-gs)
+
   set-current-plot "Brier over Time"
 
   set-current-plot-pen "PS"
-  plotxy ticks mean [brier] of power-seekers
+  plot-pen-reset ; Start pen at x=0
+  foreach avg-b-ps [ y-val ->
+    plot y-val ; Plot each value in the list
+  ]
 
   set-current-plot-pen "GS"
-  plotxy ticks mean [brier] of goodness-seekers
+  plot-pen-reset ; Start pen at x=0
+  foreach avg-b-gs [ y-val ->
+    plot y-val ; Plot each value in the list
+  ]
 end
 
-; display results: truth alignment over time for both groups
-to th-over-time
+; Plots the average Truth-Hit rate
+to plot-aggregate-truth-hit-means
+  let avg-th-ps (map [ x -> x / num-simulations ] agg-truth-hit-ps)
+  let avg-th-gs (map [ x -> x / num-simulations ] agg-truth-hit-gs)
+
   set-current-plot "Truth Hit over Time"
 
   set-current-plot-pen "PS"
-  plotxy ticks mean [truth-hit?] of power-seekers
+  plot-pen-reset
+  foreach avg-th-ps [ y-val ->
+    plot y-val
+  ]
 
   set-current-plot-pen "GS"
-  plotxy ticks mean [truth-hit?] of goodness-seekers
+  plot-pen-reset
+  foreach avg-th-gs [ y-val ->
+    plot y-val
+  ]
+end
+
+; Plots the average Brier SD (SD among agents
+to plot-aggregate-brier-sds
+  let avg-sd-b-ps (map [ x -> x / num-simulations ] agg-brier-sd-ps)
+  let avg-sd-b-gs (map [ x -> x / num-simulations ] agg-brier-sd-gs)
+
+  set-current-plot "Brier SD"
+
+  set-current-plot-pen "PS"
+  plot-pen-reset
+  foreach avg-sd-b-ps [ y-val ->
+    plot y-val
+  ]
+
+  set-current-plot-pen "GS"
+  plot-pen-reset
+  foreach avg-sd-b-gs [ y-val ->
+    plot y-val
+  ]
+end
+
+; Plots the average Truth-Hit SD (SD among agents
+to plot-aggregate-truth-hit-sds
+  let avg-sd-th-ps (map [ x -> x / num-simulations ] agg-truth-hit-sd-ps)
+  let avg-sd-th-gs (map [ x -> x / num-simulations ] agg-truth-hit-sd-gs)
+
+  set-current-plot "Truth hit SD"
+
+  set-current-plot-pen "PS"
+  plot-pen-reset
+  foreach avg-sd-th-ps [ y-val ->
+    plot y-val
+  ]
+
+  set-current-plot-pen "GS"
+  plot-pen-reset
+  foreach avg-sd-th-gs [ y-val ->
+    plot y-val
+  ]
 end
 
 ; update priors distribution histogram
@@ -317,34 +434,13 @@ to update-prior-dist
   histogram [prior-h1] of goodness-seekers
 end
 
-; update disagreement plot
-to update-th-sd-plot
-  set-current-plot "Truth hit SD"
-
-  set-current-plot-pen "PS"
-  plotxy ticks standard-deviation [truth-hit?] of power-seekers
-
-  set-current-plot-pen "GS"
-  plotxy ticks standard-deviation [truth-hit?] of goodness-seekers
-end
-
-to update-brier-sd-plot
-  set-current-plot "Brier SD"
-
-  set-current-plot-pen "PS"
-  plotxy ticks standard-deviation [brier] of power-seekers
-
-  set-current-plot-pen "GS"
-  plotxy ticks standard-deviation [brier] of goodness-seekers
-end
-
 
 ;##################################################################################################
 @#$#@#$#@
 GRAPHICS-WINDOW
-288
+253
 10
-566
+531
 289
 -1
 -1
@@ -394,33 +490,16 @@ avg-likelihood-h2
 avg-likelihood-h2
 0.01
 1
-1.0
+0.5
 0.001
 1
 NIL
 HORIZONTAL
 
 BUTTON
-73
+79
 10
-136
-43
-NIL
-go
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-147
-10
-210
+142
 43
 NIL
 go
@@ -443,7 +522,7 @@ avg-prior-h1-power-seekers
 avg-prior-h1-power-seekers
 0.001
 0.999
-0.509
+0.5
 0.001
 1
 NIL
@@ -451,14 +530,14 @@ HORIZONTAL
 
 SLIDER
 0
-75
+79
 214
-108
+112
 number-of-turtles-each
 number-of-turtles-each
-1
-2000
-100.0
+2
+500
+10.0
 1
 1
 NIL
@@ -473,7 +552,7 @@ avg-likelihood-h1
 avg-likelihood-h1
 0.01
 1
-0.5
+1.0
 0.001
 1
 NIL
@@ -490,52 +569,30 @@ g-s-bayes-updating?
 1
 -1000
 
-MONITOR
-1003
-325
-1114
-370
-mean brier p-s
-mean [brier] of power-seekers
-4
-1
-11
-
-MONITOR
-1123
-325
-1244
-370
-mean brier g-s
-mean [brier] of goodness-seekers
-4
-1
-11
-
 PLOT
-1653
-15
-2081
-310
+951
+10
+1276
+287
 Truth Hit over Time
-NIL
-NIL
+time steps
+Truth hit (average)
 0.0
-10.0
+1.0
 0.0
 1.0
 true
 true
 "set-current-plot \"Truth Hit over Time\"" ""
 PENS
-"PS" 1.0 0 -2674135 true "" "plotxy ticks mean [truth-hit?] of power-seekers"
-"GS" 1.0 0 -13345367 true "" "plotxy ticks mean [truth-hit?] of goodness-seekers"
+"PS" 1.0 0 -2674135 true "" ""
+"GS" 1.0 0 -13345367 true "" ""
 
 PLOT
-289
-463
-684
-742
+252
+325
+532
+521
 P(h1) Distribution
 NIL
 NIL
@@ -547,8 +604,8 @@ true
 true
 "set-current-plot \"P(h1) Distribution\"" ""
 PENS
-"PS" 0.01 0 -955883 true "" "histogram [prior-h1] of power-seekers"
-"GS" 0.01 0 -11221820 true "" "histogram [prior-h1] of goodness-seekers"
+"PS" 0.01 0 -955883 true "" ""
+"GS" 0.01 0 -11221820 true "" ""
 
 SLIDER
 0
@@ -566,32 +623,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1879
-323
-2013
-368
-mean truth-hit g-s
-mean [truth-hit?] of goodness-seekers
-4
-1
-11
-
-MONITOR
-1736
-323
-1870
-368
-mean truth-hit p-s
-mean [truth-hit?] of power-seekers
-4
-1
-11
-
-MONITOR
-339
-755
-474
-800
+247
+544
+382
+589
 mean [prior-h1] of p-s
 mean [prior-h1] of power-seekers
 4
@@ -599,10 +634,10 @@ mean [prior-h1] of power-seekers
 11
 
 MONITOR
-485
-756
-620
-801
+393
+545
+528
+590
 mean [prior-h1] of g-s
 mean [prior-h1] of goodness-seekers
 4
@@ -621,23 +656,23 @@ p-s-bayes-updating?
 -1000
 
 PLOT
-1659
-458
-2092
-737
+949
+342
+1276
+554
 Truth hit SD
-Time
-Standard deviation
+time steps
+Truth hit SD
 0.0
-10.0
+1.0
 0.0
 0.5
 true
 true
 "set-current-plot \"Truth hit SD\"" ""
 PENS
-"PS" 1.0 0 -955883 true "set-current-plot-pen \"PS\"" "plot standard-deviation [truth-hit?] of power-seekers"
-"GS" 1.0 0 -11221820 true "set-current-plot-pen \"GS\"" "plot standard-deviation [truth-hit?] of goodness-seekers"
+"PS" 1.0 0 -955883 true "set-current-plot-pen \"PS\"" ""
+"GS" 1.0 0 -11221820 true "set-current-plot-pen \"GS\"" ""
 
 SLIDER
 0
@@ -690,35 +725,35 @@ Likelihoods setup
 0
 
 PLOT
-912
-15
-1342
-313
+580
+10
+905
+289
 Brier over Time
-Time
+time steps
 Brier score (average)
 0.0
-10.0
+1.0
 0.0
 1.0
 true
 true
 "set-current-plot \"Brier over Time\"" ""
 PENS
-"PS" 1.0 0 -2674135 true "set-current-plot-pen \"PS\"" "plot mean [brier] of power-seekers"
-"GS" 1.0 0 -13345367 true "set-current-plot-pen \"GS\"" "plot mean [brier] of goodness-seekers"
+"PS" 1.0 0 -2674135 true "set-current-plot-pen \"PS\"" ""
+"GS" 1.0 0 -13345367 true "set-current-plot-pen \"GS\"" ""
 
 SLIDER
 0
-372
+346
 172
-405
+379
 total-ticks
 total-ticks
 0
-500
-100.0
-10
+100
+10.0
+1
 1
 NIL
 HORIZONTAL
@@ -734,10 +769,10 @@ condition
 0
 
 MONITOR
-742
-15
-847
-60
+248
+615
+353
+660
 NIL
 current-truth
 17
@@ -745,23 +780,38 @@ current-truth
 11
 
 PLOT
-915
-461
-1348
-743
+576
+343
+906
+555
 Brier SD
-NIL
-NIL
+time steps
+Brier SD
 0.0
-100.0
+1.0
 0.0
 0.5
 true
 true
 "set-current-plot \"Brier SD\"" ""
 PENS
-"PS" 1.0 0 -955883 true "set-current-plot-pen \"PS\"" "plot standard-deviation [brier] of power-seekers"
-"GS" 1.0 0 -8990512 true "set-current-plot-pen \"GS\"" "plot standard-deviation [brier] of goodness-seekers"
+"PS" 1.0 0 -955883 true "set-current-plot-pen \"PS\"" ""
+"GS" 1.0 0 -8990512 true "set-current-plot-pen \"GS\"" ""
+
+SLIDER
+0
+395
+172
+428
+num-simulations
+num-simulations
+1
+10000
+100.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 # Truth-Tracking in Explanatory Reasoning: Explanatory Power versus Explanatory Goodness
