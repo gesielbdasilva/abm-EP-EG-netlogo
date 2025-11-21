@@ -847,7 +847,7 @@ their current location.
 
 ## HOW TO USE IT
 
-You can play with the different parameters, such as prior degrees of belief and standard deviation for h1, distribution of the evidence for the two hypotheses, and whether agents update. You can also change the number of simulations in each batch. Observe how the truth-tracking scores change for each parameters combination you choose.
+You can play with the different parameters, such as prior degrees of belief and priors standard deviation, distribution of the evidence for the two hypotheses, and whether agents update. You can also change the number of simulations in each batch. Observe how the truth-tracking scores change for each parameters combination you choose.
 
 ## THINGS TO NOTICE
 
